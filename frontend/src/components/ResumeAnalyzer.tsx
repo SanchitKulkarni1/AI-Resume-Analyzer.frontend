@@ -327,6 +327,16 @@ const ResumeAnalyzer = () => {
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           rehypePlugins={[rehypeRaw]}
+                          components={{
+                            // This will find all Markdown links and render them as <a> tags
+                            // with your custom classes, without affecting any other text.
+                            a: ({node, ...props}) => (
+                              <a
+                                className="text-blue-400 underline hover:text-blue-300"
+                                {...props}
+                              />
+                            ),
+                          }}
                         >
                           {analysisResult.roadmap}
                         </ReactMarkdown>
