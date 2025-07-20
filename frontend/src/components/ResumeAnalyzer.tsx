@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,6 +68,10 @@ const ResumeAnalyzer = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
+  const [isLoading, setIsLoading] = useState (false);
+  const [progress, setProgress] = useState (0);
+  const intervalRef = useRef(null); // To manage the timer
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       setFile(e.target.files[0]);
@@ -79,11 +83,28 @@ const ResumeAnalyzer = () => {
 
     setIsAnalyzing(true);
     setAnalysisResult(null);
+
+    setIsLoading(true);
+    setProgress(0);
+
     const formData = new FormData();
     formData.append("resume", file);
 
     const description = jobMode === "profile" ? selectedProfile : jobDescription;
     formData.append("job_description", description);
+
+    //status bar time interval
+    intervalRef.current = setInterval(()=> {
+      setProgress (prev => {
+        //to stop increment until it reaches 95%
+        if (prev >=95) {
+          clearInterval (intervalRef.current)
+          return 95
+        }
+        return prev + (prev < 95 ? Math.floor(Math.random() * 10) : 1);
+ 
+      });
+    },2000)
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/analyze`, {
@@ -98,11 +119,25 @@ const ResumeAnalyzer = () => {
 
       const data: AnalysisResult = await response.json();
       setAnalysisResult(data);
+
+      clearInterval(intervalRef.current);
+      setProgress(100);
+
+      setTimeout(() => {
+        setIsLoading (false)
+      },500)
     } catch (err: any) {
       alert("Error: " + err.message);
+      clearInterval(intervalRef.current)
+      setIsLoading(false);
+      setProgress(0);
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const progressButtonStyle ={
+      background: `linear-gradient(to right, hsl(var(--primary)) ${progress}%, hsl(var(--primary-foreground)) 10%)`,
   };
 
   return (
@@ -187,12 +222,32 @@ const ResumeAnalyzer = () => {
                 onChange={handleFileChange}
                 className="bg-gray-800 border-gray-600 text-white"
               />
-              <Button onClick={startAnalysis} disabled={isAnalyzing || !file} className="mt-4 w-full">
+              {/* <Button onClick={startAnalysis} disabled={isAnalyzing || !file} className="mt-4 w-full">
                 {isAnalyzing ? (
                   <>
                     <Brain className="mr-2 h-4 w-4 animate-spin" />
                     Analyzing...
                   </>
+                ) : (
+                  <>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Start Analysis
+                  </>
+                )}
+              </Button> */}
+              <Button
+                onClick={startAnalysis}
+                disabled={isAnalyzing || !file}
+                className="mt-4 w-full"
+                // Apply the dynamic style only when analyzing
+                style={isAnalyzing ? progressButtonStyle : {}}
+              >
+                {isAnalyzing ? (
+                  <span className="flex items-center text-white-300">
+                    <Brain className="mr-2 h-4 w-4 animate-spin" />
+                    {/* Update the text to show the progress percentage */}
+                    Analyzing... {progress}%
+                  </span>
                 ) : (
                   <>
                     <FileText className="mr-2 h-4 w-4" />
