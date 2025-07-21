@@ -200,7 +200,7 @@ const ResumeAnalyzer = () => {
     // 👇 Replace with thank you toast
     toast.success("✅ Thanks for your patience! Here's your resume analysis ✨", {
       id: toastId,
-      duration: 1500,
+      duration: 100,
     });
 
     setTimeout(() => {
