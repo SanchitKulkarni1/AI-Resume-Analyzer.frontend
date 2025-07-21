@@ -162,7 +162,7 @@ const ResumeAnalyzer = () => {
           rel="noopener noreferrer"
           className="text-blue-400 underline"
         >
-          Visit LinkedIn 🔗
+          Visit LinkedIn
         </a>
       ),
       duration: 100000, // long duration, will dismiss manually
@@ -200,6 +200,7 @@ const ResumeAnalyzer = () => {
     // 👇 Replace with thank you toast
     toast.success("✅ Thanks for your patience! Here's your resume analysis ✨", {
       id: toastId,
+      duration: 1500,
     });
 
     setTimeout(() => {
