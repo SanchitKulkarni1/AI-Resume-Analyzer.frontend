@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner"; // or "react-hot-toast"
+
 import {
   Brain,
   FileText,
@@ -78,63 +80,140 @@ const ResumeAnalyzer = () => {
     }
   };
 
-  const startAnalysis = async () => {
-    if (!file) return alert("Please upload a resume first.");
+  // const startAnalysis = async () => {
+  //   if (!file) return alert("Please upload a resume first.");
 
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
+  //   setIsAnalyzing(true);
+  //   setAnalysisResult(null);
 
-    setIsLoading(true);
-    setProgress(0);
+  //   setIsLoading(true);
+  //   setProgress(0);
 
-    const formData = new FormData();
-    formData.append("resume", file);
+  //   const formData = new FormData();
+  //   formData.append("resume", file);
 
-    const description = jobMode === "profile" ? selectedProfile : jobDescription;
-    formData.append("job_description", description);
+  //   const description = jobMode === "profile" ? selectedProfile : jobDescription;
+  //   formData.append("job_description", description);
 
-    //status bar time interval
-    intervalRef.current = setInterval(()=> {
-      setProgress (prev => {
-        //to stop increment until it reaches 95%
-        if (prev >=95) {
-          clearInterval (intervalRef.current)
-          return 95
-        }
-        return prev + (prev < 95 ? Math.floor(Math.random() * 10) : 1);
+  //   //status bar time interval
+  //   intervalRef.current = setInterval(()=> {
+  //     setProgress (prev => {
+  //       //to stop increment until it reaches 95%
+  //       if (prev >=95) {
+  //         clearInterval (intervalRef.current)
+  //         return 95
+  //       }
+  //       return prev + (prev < 95 ? Math.floor(Math.random() * 10) : 1);
  
-      });
-    },2000)
+  //     });
+  //   },2000)
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/analyze`, {
-        method: "POST",
-        body: formData,
-      });
+  //   try {
+  //     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/analyze`, {
+  //       method: "POST",
+  //       body: formData,
+  //     });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to analyze resume");
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.error || "Failed to analyze resume");
+  //     }
 
-      const data: AnalysisResult = await response.json();
-      setAnalysisResult(data);
+  //     const data: AnalysisResult = await response.json();
+  //     setAnalysisResult(data);
 
-      clearInterval(intervalRef.current);
-      setProgress(100);
+  //     clearInterval(intervalRef.current);
+  //     setProgress(100);
 
-      setTimeout(() => {
-        setIsLoading (false)
-      },500)
-    } catch (err: any) {
-      alert("Error: " + err.message);
-      clearInterval(intervalRef.current)
-      setIsLoading(false);
-      setProgress(0);
-    } finally {
-      setIsAnalyzing(false);
+  //     setTimeout(() => {
+  //       setIsLoading (false)
+  //     },500)
+  //   } catch (err: any) {
+  //     alert("Error: " + err.message);
+  //     clearInterval(intervalRef.current)
+  //     setIsLoading(false);
+  //     setProgress(0);
+  //   } finally {
+  //     setIsAnalyzing(false);
+  //   }
+  // };
+
+  const startAnalysis = async () => {
+  if (!file) return alert("Please upload a resume first.");
+
+  setIsAnalyzing(true);
+  setAnalysisResult(null);
+  setIsLoading(true);
+  setProgress(0);
+
+  const formData = new FormData();
+  formData.append("resume", file);
+  const description = jobMode === "profile" ? selectedProfile : jobDescription;
+  formData.append("job_description", description);
+
+  // 👇 Show funny loading toast
+  const toastId = toast.loading(
+    "Analyzing resume might take few mins due to free API limits...\nMeanwhile, check out my LinkedIn!",
+    {
+      description: (
+        <a
+          href="http://www.linkedin.com/in/sanchit-kulkarni-22007529b"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 underline"
+        >
+          Visit LinkedIn 🔗
+        </a>
+      ),
+      duration: 100000, // long duration, will dismiss manually
     }
-  };
+  );
+
+  // Progress interval
+  intervalRef.current = setInterval(() => {
+    setProgress((prev) => {
+      if (prev >= 95) {
+        clearInterval(intervalRef.current);
+        return 95;
+      }
+      return prev + (prev < 95 ? Math.floor(Math.random() * 10) : 1);
+    });
+  }, 2000);
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/analyze`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to analyze resume");
+    }
+
+    const data: AnalysisResult = await response.json();
+    setAnalysisResult(data);
+
+    clearInterval(intervalRef.current);
+    setProgress(100);
+
+    // 👇 Replace with thank you toast
+    toast.success("✅ Thanks for your patience! Here's your resume analysis ✨", {
+      id: toastId,
+    });
+
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+  } catch (err: any) {
+    toast.error("❌ Error occurred: " + err.message, { id: toastId });
+    clearInterval(intervalRef.current);
+    setIsLoading(false);
+    setProgress(0);
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
 
   const progressButtonStyle ={
       background: `linear-gradient(to right, hsl(var(--primary)) ${progress}%, hsl(var(--primary-foreground)) 10%)`,
